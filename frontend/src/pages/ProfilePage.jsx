@@ -4,7 +4,7 @@ import { Camera, Mail, User } from "lucide-react";
 import { toast } from "react-toastify"; // Certifique-se de ter instalado e configurado o react-toastify
 import "react-toastify/dist/ReactToastify.css";
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // Limite de 5MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // Limite de 10MB
 
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
@@ -14,10 +14,12 @@ const ProfilePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Validação do tamanho da imagem
     if (file.size > MAX_IMAGE_SIZE) {
-      return toast.error("A imagem deve ter no máximo 5MB.");
+      return toast.error("A imagem deve ter no máximo 10MB.");
     }
 
+    // Validação do tipo da imagem
     const validImageTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!validImageTypes.includes(file.type)) {
       return toast.error("Por favor, envie uma imagem válida (JPEG, PNG ou WEBP).");
