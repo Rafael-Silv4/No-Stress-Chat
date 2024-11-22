@@ -3,8 +3,9 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
+// Função de registro (signup)
 export const signup = async (req, res) => {
-  const { fullName, email, password } = req.body;
+  const { fullName, email, password, profilePic } = req.body;
   try {
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -21,14 +22,22 @@ export const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    let profilePicUrl = null;
+    if (profilePic) {
+      // Se uma foto de perfil foi enviada, faz o upload no Cloudinary
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      profilePicUrl = uploadResponse.secure_url;
+    }
+
     const newUser = new User({
       fullName,
       email,
       password: hashedPassword,
+      profilePic: profilePicUrl, // A foto de perfil pode ser nula ou definida
     });
 
     if (newUser) {
-      // generate jwt token here
+      // Gera o token JWT
       generateToken(newUser._id, res);
       await newUser.save();
 
@@ -47,6 +56,7 @@ export const signup = async (req, res) => {
   }
 };
 
+// Função de login (login)
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -75,6 +85,7 @@ export const login = async (req, res) => {
   }
 };
 
+// Função de logout (logout)
 export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
@@ -85,6 +96,7 @@ export const logout = (req, res) => {
   }
 };
 
+// Função de atualização de perfil (updateProfile)
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
@@ -94,10 +106,11 @@ export const updateProfile = async (req, res) => {
       return res.status(400).json({ message: "Profile pic is required" });
     }
 
+    // Faz o upload da nova foto no Cloudinary
     const uploadResponse = await cloudinary.uploader.upload(profilePic);
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { profilePic: uploadResponse.secure_url },
+      { profilePic: uploadResponse.secure_url }, // Atualiza a foto de perfil com o URL do Cloudinary
       { new: true }
     );
 
@@ -108,6 +121,7 @@ export const updateProfile = async (req, res) => {
   }
 };
 
+// Função de verificação de autenticação (checkAuth)
 export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);
