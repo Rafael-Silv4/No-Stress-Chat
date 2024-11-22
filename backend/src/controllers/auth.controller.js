@@ -5,7 +5,7 @@ import cloudinary from "../lib/cloudinary.js";
 
 // Função de registro (signup)
 export const signup = async (req, res) => {
-  const { fullName, email, password, profilePic } = req.body;
+  const { fullName, email, password } = req.body;
   try {
     if (!fullName || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
@@ -22,22 +22,14 @@ export const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    let profilePicUrl = null;
-    if (profilePic) {
-      // Se uma foto de perfil foi enviada, faz o upload no Cloudinary
-      const uploadResponse = await cloudinary.uploader.upload(profilePic);
-      profilePicUrl = uploadResponse.secure_url;
-    }
-
     const newUser = new User({
       fullName,
       email,
       password: hashedPassword,
-      profilePic: profilePicUrl, // A foto de perfil pode ser nula ou definida
+      profilePic: null, // Perfil inicial sem imagem
     });
 
     if (newUser) {
-      // Gera o token JWT
       generateToken(newUser._id, res);
       await newUser.save();
 
@@ -51,7 +43,7 @@ export const signup = async (req, res) => {
       res.status(400).json({ message: "Invalid user data" });
     }
   } catch (error) {
-    console.log("Error in signup controller", error.message);
+    console.error("Error in signup controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -80,7 +72,7 @@ export const login = async (req, res) => {
       profilePic: user.profilePic,
     });
   } catch (error) {
-    console.log("Error in login controller", error.message);
+    console.error("Error in login controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -91,7 +83,7 @@ export const logout = (req, res) => {
     res.cookie("jwt", "", { maxAge: 0 });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
-    console.log("Error in logout controller", error.message);
+    console.error("Error in logout controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -99,25 +91,28 @@ export const logout = (req, res) => {
 // Função de atualização de perfil (updateProfile)
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic) {
-      return res.status(400).json({ message: "Profile pic is required" });
+    if (!req.file) {
+      return res.status(400).json({ message: "Nenhuma imagem foi enviada." });
     }
 
     // Faz o upload da nova foto no Cloudinary
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "profile_pics",
+      resource_type: "image",
+    });
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { profilePic: uploadResponse.secure_url }, // Atualiza a foto de perfil com o URL do Cloudinary
+      { profilePic: uploadResult.secure_url }, // Atualiza a foto de perfil
       { new: true }
     );
 
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.log("error in update profile:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error in updateProfile controller:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -126,7 +121,7 @@ export const checkAuth = (req, res) => {
   try {
     res.status(200).json(req.user);
   } catch (error) {
-    console.log("Error in checkAuth controller", error.message);
+    console.error("Error in checkAuth controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
