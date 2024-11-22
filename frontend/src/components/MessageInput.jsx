@@ -1,18 +1,21 @@
 import { useRef, useState } from "react";
 import { useChatStore } from "../store/useChatStore";
-import { Image, Send, X } from "lucide-react";
+import { Image, Send, X, Smile } from "lucide-react";
 import toast from "react-hot-toast";
+import { Picker } from "emoji-mart";
+import "emoji-mart/css/emoji-mart.css";
 
 const MessageInput = () => {
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
   const fileInputRef = useRef(null);
   const { sendMessage } = useChatStore();
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error("Por favor, selecione um arquivo de imagem.");
       return;
     }
 
@@ -38,13 +41,18 @@ const MessageInput = () => {
         image: imagePreview,
       });
 
-      // Clear form
+      // Limpar o formulário
       setText("");
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       console.error("Falha ao enviar mensagem:", error);
     }
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    setText(text + emoji.native); // Adiciona o emoji ao texto
+    setEmojiPickerVisible(false); // Fecha o picker de emoji
   };
 
   return (
@@ -59,8 +67,7 @@ const MessageInput = () => {
             />
             <button
               onClick={removeImage}
-              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-base-300
-              flex items-center justify-center"
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-base-300 flex items-center justify-center"
               type="button"
             >
               <X className="size-3" />
@@ -88,8 +95,21 @@ const MessageInput = () => {
 
           <button
             type="button"
-            className={`hidden sm:flex btn btn-circle
-                     ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
+            className="btn btn-circle text-zinc-400"
+            onClick={() => setEmojiPickerVisible(!emojiPickerVisible)}
+          >
+            <Smile size={20} />
+          </button>
+          
+          {emojiPickerVisible && (
+            <div className="absolute bottom-14 z-10">
+              <Picker onSelect={handleEmojiSelect} emojiSize={20} />
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={`hidden sm:flex btn btn-circle ${imagePreview ? "text-emerald-500" : "text-zinc-400"}`}
             onClick={() => fileInputRef.current?.click()}
           >
             <Image size={20} />
@@ -106,4 +126,5 @@ const MessageInput = () => {
     </div>
   );
 };
+
 export default MessageInput;
