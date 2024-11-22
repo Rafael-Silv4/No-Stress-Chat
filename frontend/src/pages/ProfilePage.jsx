@@ -4,7 +4,7 @@ import { Camera, Mail, User } from "lucide-react";
 import { toast } from "react-toastify"; // Certifique-se de ter instalado e configurado o react-toastify
 import "react-toastify/dist/ReactToastify.css";
 
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // Limite de 10MB
+const MAX_IMAGE_SIZE = 320 * 1024 * 1024; // Limite de 10MB
 
 const ProfilePage = () => {
   const { authUser, isUpdatingProfile, updateProfile } = useAuthStore();
